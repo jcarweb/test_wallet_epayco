@@ -59,10 +59,38 @@ app.use((req, res, next) => {
 // Helper function to create SOAP client
 function createSoapClient() {
   return new Promise((resolve, reject) => {
-    soap.createClient(SOAP_URL, (err, client) => {
+    console.log('Creating SOAP client with URL:', SOAP_URL);
+    soap.createClient(SOAP_URL, {
+      wsdl_options: {
+        timeout: 10000,
+        connection_timeout: 10000
+      },
+      // Force SOAP 1.2
+      forceSoap12Headers: true,
+      // Enable XML escaping
+      escapeXML: true,
+      // Disable namespace array elements
+      namespaceArrayElements: false,
+      // Enable request/response logging
+      returnFault: true
+    }, (err, client) => {
       if (err) {
+        console.error('SOAP Client Error:', err);
+        console.error('Error details:', JSON.stringify(err, null, 2));
         reject(err);
       } else {
+        console.log('SOAP Client created successfully');
+        console.log('Available methods:', Object.keys(client));
+        
+        // Enable request/response logging
+        client.on('request', function(xml, eid) {
+          console.log('SOAP Request XML:', xml);
+        });
+        
+        client.on('response', function(xml, eid) {
+          console.log('SOAP Response XML:', xml);
+        });
+        
         resolve(client);
       }
     });
@@ -79,12 +107,11 @@ function buildResponse(success, codError, messageError, data) {
   };
 }
 
-// Input sanitization
+// Input sanitization - trim whitespace only
+// XML escaping is handled automatically by the SOAP library
 function sanitizeInput(input) {
   if (typeof input !== 'string') return input;
-  return input.trim()
-    .replace(/[<>]/g, '')
-    .replace(/['"]/g, '');
+  return input.trim();
 }
 
 // Validation error handler
@@ -111,24 +138,78 @@ app.post('/api/register-client', [
     
     const client = await createSoapClient();
     
-    client.registerClient({
+    // Verificar que el método existe
+    if (!client.registerClient) {
+      console.error('Method registerClient not found in SOAP client');
+      return res.status(500).json(
+        buildResponse(false, '99', 'Método SOAP no encontrado', null)
+      );
+    }
+    
+    // Log the request data before sending
+    const requestData = {
       document: sanitizeInput(document),
       fullName: sanitizeInput(fullName),
       email: sanitizeInput(email),
       phoneNumber: sanitizeInput(phoneNumber)
-    }, (err, result) => {
+    };
+    console.log('Sending SOAP request data:', JSON.stringify(requestData, null, 2));
+    
+    client.registerClient(requestData, (err, result, rawResponse, soapHeader, rawRequest) => {
+      // Log the raw request XML if available
+      if (rawRequest) {
+        console.log('Raw SOAP Request XML:', rawRequest);
+      }
+      if (client.lastRequest) {
+        console.log('Last SOAP Request XML:', client.lastRequest);
+      }
       if (err) {
+        console.error('SOAP Call Error:', err);
+        console.error('Error type:', typeof err);
+        console.error('Error keys:', Object.keys(err || {}));
+        
+        // Extract error message from various error structures
+        let errorMsg = 'Error desconocido';
+        
+        if (err.Fault) {
+          errorMsg = err.Fault.faultstring || err.Fault.detail || 'Error SOAP';
+          console.error('SOAP Fault:', err.Fault);
+        } else if (err.response && err.response.data) {
+          // Handle HTML error responses (like PHP errors)
+          const htmlData = typeof err.response.data === 'string' ? err.response.data : '';
+          // Try to extract PHP error message from HTML
+          const phpErrorMatch = htmlData.match(/Error: ([^\n]+)/);
+          if (phpErrorMatch) {
+            errorMsg = `Error del servidor: ${phpErrorMatch[1]}`;
+          } else {
+            errorMsg = 'Error del servidor SOAP';
+          }
+        } else if (err.body) {
+          const htmlBody = typeof err.body === 'string' ? err.body : '';
+          const phpErrorMatch = htmlBody.match(/Error: ([^\n]+)/);
+          if (phpErrorMatch) {
+            errorMsg = `Error del servidor: ${phpErrorMatch[1]}`;
+          } else {
+            errorMsg = err.body.substring(0, 200);
+          }
+        } else if (err.message) {
+          errorMsg = err.message;
+        }
+        
         return res.status(500).json(
-          buildResponse(false, '99', 'Error al comunicarse con el servicio SOAP: ' + err.message, null)
+          buildResponse(false, '99', 'Error al comunicarse con el servicio SOAP: ' + errorMsg, null)
         );
       }
       
-      const response = result.return || result.registerClientResponse || result;
+      const response = result?.return || result?.registerClientResponse || result || {};
+      console.log('SOAP Response:', JSON.stringify(result, null, 2));
       res.status(response.success ? 200 : 400).json(response);
     });
   } catch (error) {
+    console.error('Catch Error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json(
-      buildResponse(false, '99', 'Error interno del servidor: ' + error.message, null)
+      buildResponse(false, '99', 'Error interno del servidor: ' + (error.message || String(error)), null)
     );
   }
 });
@@ -151,8 +232,25 @@ app.post('/api/recharge-wallet', [
       amount: parseFloat(amount)
     }, (err, result) => {
       if (err) {
+        console.error('SOAP Call Error:', err);
+        let errorMsg = 'Error desconocido';
+        
+        if (err.Fault) {
+          errorMsg = err.Fault.faultstring || err.Fault.detail || 'Error SOAP';
+        } else if (err.response?.data) {
+          const htmlData = typeof err.response.data === 'string' ? err.response.data : '';
+          const phpErrorMatch = htmlData.match(/Error: ([^\n]+)/);
+          errorMsg = phpErrorMatch ? `Error del servidor: ${phpErrorMatch[1]}` : 'Error del servidor SOAP';
+        } else if (err.body) {
+          const htmlBody = typeof err.body === 'string' ? err.body : '';
+          const phpErrorMatch = htmlBody.match(/Error: ([^\n]+)/);
+          errorMsg = phpErrorMatch ? `Error del servidor: ${phpErrorMatch[1]}` : err.body.substring(0, 200);
+        } else if (err.message) {
+          errorMsg = err.message;
+        }
+        
         return res.status(500).json(
-          buildResponse(false, '99', 'Error al comunicarse con el servicio SOAP: ' + err.message, null)
+          buildResponse(false, '99', 'Error al comunicarse con el servicio SOAP: ' + errorMsg, null)
         );
       }
       
@@ -184,8 +282,25 @@ app.post('/api/initiate-payment', [
       amount: parseFloat(amount)
     }, (err, result) => {
       if (err) {
+        console.error('SOAP Call Error:', err);
+        let errorMsg = 'Error desconocido';
+        
+        if (err.Fault) {
+          errorMsg = err.Fault.faultstring || err.Fault.detail || 'Error SOAP';
+        } else if (err.response?.data) {
+          const htmlData = typeof err.response.data === 'string' ? err.response.data : '';
+          const phpErrorMatch = htmlData.match(/Error: ([^\n]+)/);
+          errorMsg = phpErrorMatch ? `Error del servidor: ${phpErrorMatch[1]}` : 'Error del servidor SOAP';
+        } else if (err.body) {
+          const htmlBody = typeof err.body === 'string' ? err.body : '';
+          const phpErrorMatch = htmlBody.match(/Error: ([^\n]+)/);
+          errorMsg = phpErrorMatch ? `Error del servidor: ${phpErrorMatch[1]}` : err.body.substring(0, 200);
+        } else if (err.message) {
+          errorMsg = err.message;
+        }
+        
         return res.status(500).json(
-          buildResponse(false, '99', 'Error al comunicarse con el servicio SOAP: ' + err.message, null)
+          buildResponse(false, '99', 'Error al comunicarse con el servicio SOAP: ' + errorMsg, null)
         );
       }
       
@@ -215,8 +330,25 @@ app.post('/api/confirm-payment', [
       token: sanitizeInput(token)
     }, (err, result) => {
       if (err) {
+        console.error('SOAP Call Error:', err);
+        let errorMsg = 'Error desconocido';
+        
+        if (err.Fault) {
+          errorMsg = err.Fault.faultstring || err.Fault.detail || 'Error SOAP';
+        } else if (err.response?.data) {
+          const htmlData = typeof err.response.data === 'string' ? err.response.data : '';
+          const phpErrorMatch = htmlData.match(/Error: ([^\n]+)/);
+          errorMsg = phpErrorMatch ? `Error del servidor: ${phpErrorMatch[1]}` : 'Error del servidor SOAP';
+        } else if (err.body) {
+          const htmlBody = typeof err.body === 'string' ? err.body : '';
+          const phpErrorMatch = htmlBody.match(/Error: ([^\n]+)/);
+          errorMsg = phpErrorMatch ? `Error del servidor: ${phpErrorMatch[1]}` : err.body.substring(0, 200);
+        } else if (err.message) {
+          errorMsg = err.message;
+        }
+        
         return res.status(500).json(
-          buildResponse(false, '99', 'Error al comunicarse con el servicio SOAP: ' + err.message, null)
+          buildResponse(false, '99', 'Error al comunicarse con el servicio SOAP: ' + errorMsg, null)
         );
       }
       
@@ -246,8 +378,25 @@ app.post('/api/check-balance', [
       phoneNumber: sanitizeInput(phoneNumber)
     }, (err, result) => {
       if (err) {
+        console.error('SOAP Call Error:', err);
+        let errorMsg = 'Error desconocido';
+        
+        if (err.Fault) {
+          errorMsg = err.Fault.faultstring || err.Fault.detail || 'Error SOAP';
+        } else if (err.response?.data) {
+          const htmlData = typeof err.response.data === 'string' ? err.response.data : '';
+          const phpErrorMatch = htmlData.match(/Error: ([^\n]+)/);
+          errorMsg = phpErrorMatch ? `Error del servidor: ${phpErrorMatch[1]}` : 'Error del servidor SOAP';
+        } else if (err.body) {
+          const htmlBody = typeof err.body === 'string' ? err.body : '';
+          const phpErrorMatch = htmlBody.match(/Error: ([^\n]+)/);
+          errorMsg = phpErrorMatch ? `Error del servidor: ${phpErrorMatch[1]}` : err.body.substring(0, 200);
+        } else if (err.message) {
+          errorMsg = err.message;
+        }
+        
         return res.status(500).json(
-          buildResponse(false, '99', 'Error al comunicarse con el servicio SOAP: ' + err.message, null)
+          buildResponse(false, '99', 'Error al comunicarse con el servicio SOAP: ' + errorMsg, null)
         );
       }
       

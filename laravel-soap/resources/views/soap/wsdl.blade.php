@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://schemas.xmlsoap.org/wsdl/"
              xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+             xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/"
              xmlns:tns="{{ url('/soap') }}"
              targetNamespace="{{ url('/soap') }}">
 
@@ -166,57 +167,57 @@
     </portType>
 
     <binding name="WalletServiceBinding" type="tns:WalletServicePortType">
-        <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+        <soap12:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
         <operation name="registerClient">
-            <soap:operation soapAction="{{ url('/soap') }}/registerClient"/>
+            <soap12:operation soapAction="{{ url('/soap') }}/registerClient" soapActionRequired="false"/>
             <input>
-                <soap:body use="literal"/>
+                <soap12:body use="literal"/>
             </input>
             <output>
-                <soap:body use="literal"/>
+                <soap12:body use="literal"/>
             </output>
         </operation>
         <operation name="rechargeWallet">
-            <soap:operation soapAction="{{ url('/soap') }}/rechargeWallet"/>
+            <soap12:operation soapAction="{{ url('/soap') }}/rechargeWallet" soapActionRequired="false"/>
             <input>
-                <soap:body use="literal"/>
+                <soap12:body use="literal"/>
             </input>
             <output>
-                <soap:body use="literal"/>
+                <soap12:body use="literal"/>
             </output>
         </operation>
         <operation name="initiatePayment">
-            <soap:operation soapAction="{{ url('/soap') }}/initiatePayment"/>
+            <soap12:operation soapAction="{{ url('/soap') }}/initiatePayment" soapActionRequired="false"/>
             <input>
-                <soap:body use="literal"/>
+                <soap12:body use="literal"/>
             </input>
             <output>
-                <soap:body use="literal"/>
+                <soap12:body use="literal"/>
             </output>
         </operation>
         <operation name="confirmPayment">
-            <soap:operation soapAction="{{ url('/soap') }}/confirmPayment"/>
+            <soap12:operation soapAction="{{ url('/soap') }}/confirmPayment" soapActionRequired="false"/>
             <input>
-                <soap:body use="literal"/>
+                <soap12:body use="literal"/>
             </input>
             <output>
-                <soap:body use="literal"/>
+                <soap12:body use="literal"/>
             </output>
         </operation>
         <operation name="checkBalance">
-            <soap:operation soapAction="{{ url('/soap') }}/checkBalance"/>
+            <soap12:operation soapAction="{{ url('/soap') }}/checkBalance" soapActionRequired="false"/>
             <input>
-                <soap:body use="literal"/>
+                <soap12:body use="literal"/>
             </input>
             <output>
-                <soap:body use="literal"/>
+                <soap12:body use="literal"/>
             </output>
         </operation>
     </binding>
 
     <service name="WalletService">
         <port name="WalletServicePort" binding="tns:WalletServiceBinding">
-            <soap:address location="{{ url('/soap/service') }}"/>
+            <soap12:address location="{{ url('/soap/service') }}"/>
         </port>
     </service>
 </definitions>

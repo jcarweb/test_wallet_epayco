@@ -16,10 +16,92 @@ class WalletSoapService
     public function registerClient($params): array
     {
         try {
-            $document = $params->document ?? $params['document'] ?? '';
-            $fullName = $params->fullName ?? $params['fullName'] ?? '';
-            $email = $params->email ?? $params['email'] ?? '';
-            $phoneNumber = $params->phoneNumber ?? $params['phoneNumber'] ?? '';
+            // Log para depuración - convertir objeto a array para logging
+            $paramsForLog = $params;
+            if (is_object($params)) {
+                $paramsForLog = json_decode(json_encode($params), true);
+            }
+            \Log::info('registerClient llamado', [
+                'params_type' => gettype($params),
+                'params' => $paramsForLog,
+                'is_object' => is_object($params),
+                'is_array' => is_array($params)
+            ]);
+            
+            // Manejar diferentes formatos de parámetros SOAP
+            // En document/literal, PHP SoapServer puede pasar los parámetros de diferentes formas
+            $document = '';
+            $fullName = '';
+            $email = '';
+            $phoneNumber = '';
+            
+            // Función helper para extraer valores
+            $getValue = function($obj, $key, $default = '') {
+                if (is_object($obj)) {
+                    return isset($obj->$key) ? $obj->$key : (property_exists($obj, $key) ? $obj->$key : $default);
+                } elseif (is_array($obj)) {
+                    return $obj[$key] ?? $default;
+                }
+                return $default;
+            };
+            
+            if (is_object($params)) {
+                // Intentar extraer directamente
+                $document = $getValue($params, 'document');
+                $fullName = $getValue($params, 'fullName');
+                $email = $getValue($params, 'email');
+                $phoneNumber = $getValue($params, 'phoneNumber');
+                
+                // Si no se encontraron valores, puede que vengan dentro de un objeto con el nombre del elemento
+                // (registerClientRequest en document/literal style)
+                if (empty($document) && empty($fullName)) {
+                    // Buscar dentro de propiedades del objeto que puedan contener los datos
+                    $paramsArray = (array)$params;
+                    
+                    // Buscar en el array convertido
+                    $document = $paramsArray['document'] ?? '';
+                    $fullName = $paramsArray['fullName'] ?? '';
+                    $email = $paramsArray['email'] ?? '';
+                    $phoneNumber = $paramsArray['phoneNumber'] ?? '';
+                    
+                    // Si aún no hay datos, buscar en propiedades anidadas
+                    if (empty($document) && empty($fullName)) {
+                        foreach ($paramsArray as $key => $value) {
+                            if (is_object($value) || is_array($value)) {
+                                $document = $getValue($value, 'document') ?: $document;
+                                $fullName = $getValue($value, 'fullName') ?: $fullName;
+                                $email = $getValue($value, 'email') ?: $email;
+                                $phoneNumber = $getValue($value, 'phoneNumber') ?: $phoneNumber;
+                            }
+                        }
+                    }
+                }
+            } elseif (is_array($params)) {
+                // Si viene como array
+                $document = $params['document'] ?? '';
+                $fullName = $params['fullName'] ?? '';
+                $email = $params['email'] ?? '';
+                $phoneNumber = $params['phoneNumber'] ?? '';
+                
+                // Si no hay datos directos, buscar en arrays anidados
+                if (empty($document) && empty($fullName)) {
+                    foreach ($params as $key => $value) {
+                        if (is_array($value) || is_object($value)) {
+                            $document = $getValue($value, 'document') ?: $document;
+                            $fullName = $getValue($value, 'fullName') ?: $fullName;
+                            $email = $getValue($value, 'email') ?: $email;
+                            $phoneNumber = $getValue($value, 'phoneNumber') ?: $phoneNumber;
+                        }
+                    }
+                }
+            }
+            
+            \Log::info('Parámetros extraídos', [
+                'document' => $document,
+                'fullName' => $fullName,
+                'email' => $email,
+                'phoneNumber' => $phoneNumber
+            ]);
 
             // Validación de campos requeridos
             if (empty($document) || empty($fullName) || empty($email) || empty($phoneNumber)) {
@@ -70,6 +152,11 @@ class WalletSoapService
 
         } catch (\Exception $e) {
             DB::rollBack();
+            \Log::error('Error en registerClient: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return $this->buildResponse(false, '99', 'Error interno del servidor: ' . $e->getMessage(), null);
         }
     }
