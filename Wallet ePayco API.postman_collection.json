@@ -1,0 +1,536 @@
+{
+	"info": {
+		"_postman_id": "4ef6c8b8-c37c-4f0e-bf30-fa35055b2202",
+		"name": "Wallet ePayco API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "15533469"
+	},
+	"item": [
+		{
+			"name": "RegistroCliente",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"document\": \"1234567890\",\r\n  \"fullName\": \"Juan Hernandez\",\r\n  \"email\": \"juan@testepayco.com\",\r\n  \"phoneNumber\": \"3005555556\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/register-client",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"register-client"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RegistroClienteValidacionDocumento",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"document\": \"1234567890\",\r\n  \"fullName\": \"Luis Pérez\",\r\n  \"email\": \"luis@gmail.com\",\r\n  \"phoneNumber\": \"728273990\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/register-client",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"register-client"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RegistroClienteValidacionDuplicadoCorreo",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"document\": \"1234567889\",\r\n  \"fullName\": \"Juan Hernandez\",\r\n  \"email\": \"juan@testepayco.com\",\r\n  \"phoneNumber\": \"30075768909\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/register-client",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"register-client"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RegistroClienteValidacionCamposRequeridos",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"document\": \"1234567889\",\r\n  \"fullName\": \"Juan Hernandez\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/register-client",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"register-client"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RegistroClienteValidacionEmailinválido",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"document\": \"1234567889\",\r\n  \"fullName\": \"Juan Hernandez Duplicado\",\r\n  \"email\": \"juan_testepayco\",\r\n  \"phoneNumber\": \"30075768909\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/register-client",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"register-client"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RecargaWallet",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"document\": \"1234567890\",\r\n  \"phoneNumber\": \"3005555556\",\r\n  \"amount\": 100000\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/recharge-wallet",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"recharge-wallet"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RecargaWalletValidacionBilleteraNoExiste",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"document\": \"1234567760\",\r\n  \"phoneNumber\": \"3009097556\",\r\n  \"amount\": 100000\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/recharge-wallet",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"recharge-wallet"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "IniciarPago",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"document\": \"1234567890\",\r\n  \"phoneNumber\": \"3005555556\",\r\n  \"amount\": 50000.00\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/initiate-payment",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"initiate-payment"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "IniciarPagoValidacionSaldoInsuficiente",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"document\": \"1234567890\",\r\n  \"phoneNumber\": \"3005555556\",\r\n  \"amount\": 90000.00\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/initiate-payment",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"initiate-payment"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ConfirmacionPago",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"sessionId\": \"05c6c777-81ce-4a2e-882a-52045bc20999\",\r\n  \"token\": \"898308\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/confirm-payment",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"confirm-payment"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ConfirmacionPagoTokenInvalido",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"sessionId\": \"05c6c777-81ce-4a2e-882a-52045bc20999\",\r\n  \"token\": \"123456\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/confirm-payment",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"confirm-payment"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ConfirmacionPagoValidacionErroSesion",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"sessionId\": \"05c6c777-81ce-4a2e-882a-52045bc20472\",\r\n  \"token\": \"898309\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/confirm-payment",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"confirm-payment"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ConfirmacionPagoValidacionTokenInvalido",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"sessionId\": \"05c6c777-81ce-4a2e-882a-52045bc20999\",\r\n  \"token\": \"898308\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/confirm-payment",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"confirm-payment"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ConsultaSaldo",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"document\": \"1234567890\",\r\n  \"phoneNumber\": \"3005555556\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/check-balance",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"check-balance"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ConsultaSaldoDocumetoNoReg",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"document\": \"12345632323\",\r\n  \"phoneNumber\": \"30055534346\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/check-balance",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"check-balance"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "",
+			"type": "default"
+		}
+	]
+}
