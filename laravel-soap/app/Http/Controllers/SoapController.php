@@ -1,5 +1,16 @@
 <?php
-// Controlador SOAP para manejar solicitudes y respuestas SOAP en Laravel. -ePayco Juan Hernandez 
+/**
+ * Controlador SOAP para manejar solicitudes y respuestas SOAP en Laravel.
+ * 
+ * Proyecto: Sistema de Billetera Digital ePayco
+ * Descripción: Servicio SOAP que gestiona operaciones de billetera digital incluyendo
+ *              registro de clientes, recarga de saldo, iniciación y confirmación de pagos,
+ *              y consulta de saldo. Este servicio actúa como capa de acceso exclusiva
+ *              a la base de datos del sistema.
+ * 
+ * Empresa: ePayco
+ * @Autor: Juan Hernandez
+ */
 namespace App\Http\Controllers;
 
 use App\Services\WalletSoapService;
@@ -39,12 +50,27 @@ class SoapController extends Controller
             // El valor de la constante SOAP_1_2 es 2
             $soapVersion = 2;
             
-            // Obtener URL del WSDL - usar URL completa para evitar problemas
-            $wsdlUrl = url('/soap/wsdl');
+            // Obtener el contenido del WSDL directamente en lugar de usar URL
+            // Esto evita problemas con puertos y acceso HTTP
+            $wsdlContent = view('soap.wsdl')->render();
+            
+            // Obtener el puerto de la solicitud actual para las opciones
+            $port = $request->getPort();
+            $host = $request->getHost();
+            $scheme = $request->getScheme();
+            
+            $baseUrl = $scheme . '://' . $host . ($port && $port != 80 && $port != 443 ? ':' . $port : '');
+            
+            \Log::info('URLs SOAP generadas', [
+                'base_url' => $baseUrl,
+                'port' => $port,
+                'host' => $host,
+                'scheme' => $scheme
+            ]);
             
             $options = [
-                'uri' => url('/soap'),
-                'location' => url('/soap/service'),
+                'uri' => $baseUrl . '/soap',
+                'location' => $baseUrl . '/soap/service',
                 'trace' => 1,
                 'exceptions' => true,
                 'soap_version' => $soapVersion,
@@ -52,14 +78,29 @@ class SoapController extends Controller
                 'features' => 0,
             ];
 
-            // Crear SoapServer con URL del WSDL
+            // Crear SoapServer con contenido WSDL usando un archivo temporal
             try {
-                $server = new \SoapServer($wsdlUrl, $options);
-                \Log::info('SoapServer creado exitosamente');
+                // Crear un archivo temporal con el contenido del WSDL
+                $tempFile = tempnam(sys_get_temp_dir(), 'wsdl_');
+                file_put_contents($tempFile, $wsdlContent);
+                
+                // Crear SoapServer con el archivo temporal
+                $server = new \SoapServer($tempFile, $options);
+                \Log::info('SoapServer creado exitosamente con WSDL temporal');
+                
+                // El archivo temporal se eliminará automáticamente al finalizar el script
+                register_shutdown_function(function() use ($tempFile) {
+                    if (file_exists($tempFile)) {
+                        @unlink($tempFile);
+                    }
+                });
             } catch (\Exception $e) {
+                if (isset($tempFile) && file_exists($tempFile)) {
+                    @unlink($tempFile);
+                }
                 \Log::error('Error al crear SoapServer: ' . $e->getMessage(), [
-                    'wsdl_url' => $wsdlUrl,
-                    'options' => $options
+                    'options' => $options,
+                    'wsdl_length' => strlen($wsdlContent)
                 ]);
                 throw new \Exception('Error al crear el servidor SOAP: ' . $e->getMessage());
             }
@@ -94,28 +135,57 @@ class SoapController extends Controller
                 'preview' => substr($rawContent, 0, 500)
             ]);
             
+            // Configurar manejo de errores para capturar todos los errores
+            set_error_handler(function($errno, $errstr, $errfile, $errline) {
+                \Log::error('Error PHP capturado durante SOAP: ' . $errstr, [
+                    'errno' => $errno,
+                    'file' => $errfile,
+                    'line' => $errline
+                ]);
+                return false; // Continuar con el manejo de errores normal
+            });
+            
             ob_start();
             try {
+                \Log::info('Iniciando procesamiento SOAP con SoapServer->handle()');
                 $server->handle($rawContent);
+                \Log::info('SoapServer->handle() completado');
+            } catch (\SoapFault $e) {
+                ob_end_clean();
+                \Log::error('SoapFault capturado: ' . $e->getMessage(), [
+                    'code' => $e->getCode(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString(),
+                    'faultstring' => $e->faultstring ?? null,
+                    'faultcode' => $e->faultcode ?? null
+                ]);
+                throw $e;
             } catch (\Throwable $e) {
                 ob_end_clean();
                 \Log::error('Error al procesar solicitud SOAP: ' . $e->getMessage(), [
+                    'type' => get_class($e),
                     'file' => $e->getFile(),
                     'line' => $e->getLine(),
                     'trace' => $e->getTraceAsString()
                 ]);
                 throw $e;
+            } finally {
+                restore_error_handler();
             }
+            
             $response = ob_get_clean();
             
             if (empty($response)) {
-                \Log::warning('Respuesta SOAP vacía recibida');
-                throw new \Exception('Respuesta SOAP vacía');
+                \Log::warning('Respuesta SOAP vacía recibida', [
+                    'output_buffer_length' => strlen(ob_get_contents() ?: '')
+                ]);
+                throw new \Exception('Respuesta SOAP vacía - el método no retornó datos');
             }
             
             \Log::info('Respuesta SOAP generada', [
                 'response_length' => strlen($response),
-                'preview' => substr($response, 0, 200)
+                'preview' => substr($response, 0, 500)
             ]);
             
             return response($response, 200)

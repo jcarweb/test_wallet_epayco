@@ -1,3 +1,14 @@
+/**
+ * Node.js REST API Server
+ * 
+ * Proyecto: Sistema de Billetera Digital ePayco
+ * Descripción: Servidor REST API que expone endpoints HTTP para operaciones de billetera digital.
+ *              Este servidor actúa como interfaz REST y se comunica con el servicio SOAP de Laravel
+ *              para realizar todas las operaciones. No tiene acceso directo a la base de datos.
+ * 
+ * Empresa: ePayco
+ * @Autor: Juan Hernandez
+ */
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');

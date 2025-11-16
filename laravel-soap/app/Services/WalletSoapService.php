@@ -1,5 +1,16 @@
 <?php
-
+/**
+ * WalletSoapService - Servicio SOAP para operaciones de billetera
+ * 
+ * Proyecto: Sistema de Billetera Digital ePayco
+ * Descripción: Servicio que contiene toda la lógica de negocio y acceso a base de datos
+ *              para operaciones de billetera digital. Implementa las operaciones de registro
+ *              de clientes, recarga de saldo, gestión de pagos y consulta de saldo.
+ *              Este es el único punto de acceso a la base de datos del sistema.
+ * 
+ * Empresa: ePayco
+ * @Autor: Juan Hernandez
+ */
 namespace App\Services;
 
 use App\Models\Client;
@@ -15,6 +26,7 @@ class WalletSoapService
 {
     public function registerClient($params): array
     {
+        \Log::info('=== registerClient INICIADO ===');
         try {
             // Log para depuración - convertir objeto a array para logging
             $paramsForLog = $params;
@@ -25,7 +37,8 @@ class WalletSoapService
                 'params_type' => gettype($params),
                 'params' => $paramsForLog,
                 'is_object' => is_object($params),
-                'is_array' => is_array($params)
+                'is_array' => is_array($params),
+                'params_class' => is_object($params) ? get_class($params) : 'N/A'
             ]);
             
             // Manejar diferentes formatos de parámetros SOAP
@@ -143,21 +156,30 @@ class WalletSoapService
 
             DB::commit();
 
-            return $this->buildResponse(true, '00', 'Cliente registrado exitosamente', [
+            $response = $this->buildResponse(true, '00', 'Cliente registrado exitosamente', [
                 'clientId' => $client->id,
                 'document' => $client->document,
                 'fullName' => $client->fullName,
                 'email' => $client->email,
             ]);
+            
+            \Log::info('registerClient respuesta generada', ['response' => $response]);
+            \Log::info('=== registerClient COMPLETADO EXITOSAMENTE ===');
+            
+            return $response;
 
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error en registerClient: ' . $e->getMessage(), [
+            \Log::error('=== Error en registerClient ===', [
+                'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'type' => get_class($e)
             ]);
-            return $this->buildResponse(false, '99', 'Error interno del servidor: ' . $e->getMessage(), null);
+            $errorResponse = $this->buildResponse(false, '99', 'Error interno del servidor: ' . $e->getMessage(), null);
+            \Log::info('registerClient respuesta de error generada', ['response' => $errorResponse]);
+            return $errorResponse;
         }
     }
 
